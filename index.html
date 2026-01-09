@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Learning Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #0a0a0a; color: #fff; overflow: hidden; }
+        .container { display: flex; height: 100vh; }
+        canvas { background: #000; }
+        .sidebar { width: 300px; padding: 20px; background: #1a1a1a; overflow-y: auto; }
+        .sidebar h3 { margin-bottom: 15px; color: #0ff; }
+        .controls { margin-bottom: 25px; }
+        button { background: #0ff; color: #000; border: none; padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #0cc; }
+        select, input[type="range"] { width: 100%; margin: 10px 0; }
+        .status { padding: 10px; background: #222; border-radius: 5px; margin: 10px 0; }
+        .tip { font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="sidebar">
+            <h3>🎨 ПАТТЕРН</h3>
+            <select id="pattern">
+                <option value="lsystem">L-система (растение)</option>
+                <option value="mandelbrot">Множество Мандельброта</option>
+                <option value="sierpinski">Треугольник Серпинского</option>
+                <option value="perlin">Шум Перлина</option>
+            </select>
+            <h3>🎤 ГОЛОС</h3>
+            <div class="status" id="voiceStatus">Готов к команде</div>
+            <button id="voiceBtn" onclick="startVoice()">Слушать</button>
+            <div class="controls">
+                <h3>⚙️ ПАРАМЕТРЫ</h3>
+                <label>Скорость: <span id="speedVal">1</span></label>
+                <input type="range" id="speed" min="0.1" max="2" step="0.1" value="1">
+                <label>Детализация: <span id="detailVal">5</span></label>
+                <input type="range" id="detail" min="1" max="8" value="5">
+            </div>
+            <h3>🎮 УПРАВЛЕНИЕ</h3>
+            <button onclick="animate()">▶ Пуск</button>
+            <button onclick="reset()">↻ Сброс</button>
+            <p class="tip">💡 Говорите: "растение", "фрактал", "объяснить"</p>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth - 300;
+        canvas.height = window.innerHeight;
+        
+        let animating = false;
+        let angle = 0;
+
+        document.getElementById('speed').oninput = (e) => {
+            document.getElementById('speedVal').textContent = e.target.value;
+        };
+        document.getElementById('detail').oninput = (e) => {
+            document.getElementById('detailVal').textContent = e.target.value;
+        };
+        document.getElementById('pattern').onchange = () => draw();
+
+        function drawLSystem() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2;
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height - 50);
+            drawBranch(100, 0);
+            ctx.restore();
+        }
+
+        function drawBranch(len, depth) {
+            const detail = parseInt(document.getElementById('detail').value);
+            if (depth > detail) return;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -len);
+            ctx.stroke();
+            ctx.translate(0, -len);
+            
+            ctx.save();
+            ctx.rotate(angle + Math.PI / 6);
+            drawBranch(len * 0.67, depth + 1);
+            ctx.restore();
+            
+            ctx.save();
+            ctx.rotate(angle - Math.PI / 6);
+            drawBranch(len * 0.67, depth + 1);
+            ctx.restore();
+        }
+
+        function drawMandelbrot() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const maxIter = parseInt(document.getElementById('detail').value) * 20;
+            for (let x = 0; x < canvas.width; x += 2) {
+                for (let y = 0; y < canvas.height; y += 2) {
+                    let zx = 0, zy = 0;
+                    const cx = (x - canvas.width / 2) / (canvas.width / 4);
+                    const cy = (y - canvas.height / 2) / (canvas.height / 4);
+                    let i = maxIter;
+                    while (zx * zx + zy * zy < 4 && i > 0) {
+                        const tmp = zx * zx - zy * zy + cx;
+                        zy = 2 * zx * zy + cy;
+                        zx = tmp;
+                        i--;
+                    }
+                    const color = i === 0 ? 0 : (255 * i) / maxIter;
+                    ctx.fillStyle = `rgb(0, ${color}, ${color})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+        }
+
+        function draw() {
+            const pattern = document.getElementById('pattern').value;
+            if (pattern === 'lsystem') drawLSystem();
+            else if (pattern === 'mandelbrot') drawMandelbrot();
+            else drawLSystem();
+        }
+
+        function animate() {
+            if (!animating) {
+                animating = true;
+                function loop() {
+                    if (!animating) return;
+                    angle += 0.01 * parseFloat(document.getElementById('speed').value);
+                    draw();
+                    requestAnimationFrame(loop);
+                }
+                loop();
+            }
+        }
+
+        function reset() {
+            animating = false;
+            angle = 0;
+            draw();
+        }
+
+        function startVoice() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Голосовое управление не поддерживается в этом браузере');
+                return;
+            }
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript.toLowerCase();
+                document.getElementById('voiceStatus').textContent = `Услышано: ${text}`;
+                if (text.includes('растение')) {
+                    document.getElementById('pattern').value = 'lsystem';
+                    draw();
+                } else if (text.includes('фрактал') || text.includes('мандельброт')) {
+                    document.getElementById('pattern').value = 'mandelbrot';
+                    draw();
+                }
+            };
+            recognition.start();
+        }
+
+        draw();
+    </script>
+</body>
+</html>
