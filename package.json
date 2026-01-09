@@ -1,0 +1,33 @@
+{
+  "name": "generative-learning-studio",
+  "version": "1.0.0",
+  "description": "Interactive learning environment for modeling and generative patterns with graphics, LLM, and voice assistant",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "python -m http.server 8000",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "generative-art",
+    "l-systems",
+    "fractals",
+    "mandelbrot",
+    "perlin-noise",
+    "voice-assistant",
+    "llm",
+    "interactive-learning",
+    "computational-art",
+    "parametric-design"
+  ],
+  "author": "thelonius",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thelonius/generative-learning-studio.git"
+  },
+  "homepage": "https://thelonius.github.io/generative-learning-studio/",
+  "bugs": {
+    "url": "https://github.com/thelonius/generative-learning-studio/issues"
+  }
+}
